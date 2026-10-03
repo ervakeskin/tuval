@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tuval
 
-## Getting Started
+Türk üniversite öğrencileri ve KOBİ'ler için **Türkçe öncelikli AI sunum aracı**.
+Konuyu yaz, sunum tipini ve temayı seç; yapay zekâ tamamen **düzenlenebilir** bir slayt destesi kurar ve düzenlenebilir PPTX olarak dışa aktarır.
 
-First, run the development server:
+> Bu proje, YC Fall 2026 şirketi [Moda](https://www.ycombinator.com/companies/moda-2)'nın ("Fully editable slides, designs and video") yerelleştirilmiş bir klonudur. Ders ödevi için geliştirilmiştir; Moda ile bir bağı yoktur.
+
+## Özellikler
+
+- **Türkçe doğruluğu:** `İ/ı` kurallı büyük-küçük harf (`tr-TR`), `latin-ext` fontlar, Türkçe arayüz ve yönergeler.
+- **Türkiye'ye özgü sunum tipleri:** ödev, TÜBİTAK/bitirme projesi, KOBİ tanıtımı, yatırımcı sunumu.
+- **Düzen motoru:** Yapay zekâ koordinat üretmez; yalnızca düzen kalıbı ve içerik üretir. Koordinatları kod hesaplar, bu yüzden metin taşmaz. 11 düzen: başlık, bölüm, maddeler, iki sütun, büyük rakam, alıntı, görsel+metin, kartlar, yol haritası, vurgu cümlesi, kapanış.
+- **7 özgün tema:** Klasik, Gece, Pastel, Minimal, Cesur, Anadolu (kilim şeritli), Kurumsal. Her tema gradyan kapak, süsler ve marka kitiyle özelleştirilir.
+- **Tasarım ilkeleri koda gömülü:** ≥ 4,5:1 kontrast koruması, büyük başlıkta sıkı satır aralığı, slayt başına en fazla 5 madde, gruplama (chunking).
+- **Editör:** sürükle/boyutlandır, yerinde metin düzenleme, slayt ekle/sil/çoğalt/sırala, kendi görselini ekle, AI ile slayt düzenleme, konuşmacı notları, sunum modu, tarayıcıda otomatik kayıt.
+- **Dışa aktarma:** PowerPoint'te düzenlenebilir **PPTX** (metinler gerçek metin kutuları) ve PDF.
+
+## Kurulum
 
 ```bash
+npm install
+cp .env.example .env.local   # GEMINI_API_KEY değerini doldur
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[Google AI Studio](https://aistudio.google.com/apikey) üzerinden ücretsiz bir Gemini API anahtarı alabilirsin.
+Anahtar yalnızca sunucu tarafında (`/api/*` route'ları) kullanılır, istemci paketine girmez.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Değişken | Açıklama |
+|---|---|
+| `GEMINI_API_KEY` | Gemini API anahtarı (zorunlu) |
+| `GEMINI_MODEL` | Ana model, varsayılan `gemini-flash-latest` |
+| `GEMINI_FALLBACK_MODEL` | Ana model yoğunken (503/429) denenen yedek, varsayılan `gemini-flash-lite-latest` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Mimari
 
-## Learn More
+```
+prompt ──► /api/generate (Gemini) ──► DeckContent (düzen + içerik)
+                                         │
+                                  layoutEngine (kod)
+                                         ▼
+                              Deck (elemanlar + koordinatlar) ──► Tuval / PPTX / PDF
+```
 
-To learn more about Next.js, take a look at the following resources:
+- `src/lib/layoutEngine.ts` — düzen kalıpları ve koordinat hesabı
+- `src/lib/themes.ts` — temalar, gradyan, kontrast yardımcıları
+- `src/lib/gemini.ts` — yapılandırılmış JSON üretimi, yeniden deneme ve yedek model
+- `src/lib/exportPptx.ts`, `src/lib/exportPdf.ts` — dışa aktarma
+- Veritabanı yok; desteler `localStorage`'da saklanır.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Teknoloji
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Next.js (App Router) · TypeScript · Tailwind CSS · Gemini API (`@google/genai`) · react-rnd · pptxgenjs · html-to-image + jsPDF
 
-## Deploy on Vercel
+## Kapsam dışı (yol haritası)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Video/animasyon, gerçek zamanlı ortak çalışma, kullanıcı hesabı, görsel üretimi, Instagram carousel, Google Slides'a aktarma.

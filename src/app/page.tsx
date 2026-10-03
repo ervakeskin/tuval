@@ -1,69 +1,178 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { APP_NAME, APP_TAGLINE } from "@/lib/config";
+import { BrandKitForm } from "@/components/BrandKitForm";
+import { DECK_TYPES, type Brand, type Deck, type DeckType, type ThemeId } from "@/lib/types";
+import { DEFAULT_THEME_FOR, getTheme } from "@/lib/themes";
+import { ThemePicker } from "@/components/ThemePicker";
+import { deleteDeck, listDecks, saveDeck } from "@/lib/storage";
+import { trUpper } from "@/lib/turkish";
+
+const EXAMPLES: Record<DeckType, string> = {
+  odev: "Yapay zekânın eğitimde kullanımı",
+  proje: "Bitirme projem için TÜBİTAK sunumu: akıllı tarım sensörleri",
+  kobi: "İstanbul Şişli'de butik kahve dükkânı tanıtımı",
+  yatirimci: "Esnaflar için yapay zekâ destekli stok takip uygulaması",
+};
 
 export default function Home() {
+  const router = useRouter();
+  const [prompt, setPrompt] = useState("");
+  const [deckType, setDeckType] = useState<DeckType>("odev");
+  const [slideCount, setSlideCount] = useState(8);
+  const [brand, setBrand] = useState<Brand>({ ...getTheme("pastel").defaults, theme: "pastel" });
+  const [themeTouched, setThemeTouched] = useState(false);
+
+  const pickTheme = (id: ThemeId) => setBrand((b) => ({ ...b, ...getTheme(id).defaults, theme: id }));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [recent, setRecent] = useState<Deck[]>([]);
+
+  // localStorage yalnızca istemcide okunabilir
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setRecent(listDecks()), []);
+
+  async function create() {
+    if (!prompt.trim() || loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, deckType, slideCount, brand }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Bir hata oluştu.");
+      const deck: Deck = {
+        id: crypto.randomUUID(),
+        title: data.title,
+        deckType,
+        brand,
+        slides: data.slides,
+        updatedAt: Date.now(),
+      };
+      saveDeck(deck);
+      router.push(`/editor/${deck.id}`);
+    } catch (e) {
+      setError((e as Error).message);
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="max-w-4xl w-full mx-auto px-6 py-12">
+      <header className="mb-10 text-center">
+        <h1 className="text-4xl font-bold tracking-tight">{trUpper(APP_NAME)}</h1>
+        <p className="mt-2 text-slate-500">{APP_TAGLINE}</p>
+      </header>
+
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+        <div>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder={`Sunumunun konusunu anlat… örn. "${EXAMPLES[deckType]}"`}
+            rows={4}
+            className="w-full rounded-xl border border-slate-200 p-4 text-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {DECK_TYPES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setDeckType(t.id);
+                if (!themeTouched) pickTheme(DEFAULT_THEME_FOR[t.id]); // sunum tipine uygun tema öner
+              }}
+              className={`text-left rounded-xl border p-3 transition ${
+                deckType === t.id
+                  ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
+                  : "border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <div className="text-2xl">{t.emoji}</div>
+              <div className="font-semibold text-sm mt-1">{t.label}</div>
+              <div className="text-xs text-slate-500">{t.desc}</div>
+            </button>
+          ))}
         </div>
-      </main>
-    </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-500 mb-1">
+            Slayt sayısı: <b className="text-slate-800">{slideCount}</b>
+          </label>
+          <input
+            type="range"
+            min={5}
+            max={12}
+            value={slideCount}
+            onChange={(e) => setSlideCount(+e.target.value)}
+            className="w-full max-w-xs accent-indigo-600"
+          />
+        </div>
+
+        <div>
+          <h2 className="text-sm font-semibold mb-2">Tema</h2>
+          <ThemePicker
+            value={brand.theme ?? "klasik"}
+            onPick={(id) => {
+              setThemeTouched(true);
+              pickTheme(id);
+            }}
+          />
+        </div>
+
+        <div>
+          <h2 className="text-sm font-semibold mb-2">Marka kiti <span className="font-normal text-slate-400">(temanın renklerini özelleştir)</span></h2>
+          <BrandKitForm brand={brand} onChange={setBrand} />
+        </div>
+
+        {error && <div className="rounded-lg bg-red-50 text-red-700 text-sm p-3">{error}</div>}
+
+        <button
+          onClick={create}
+          disabled={loading || !prompt.trim()}
+          className="w-full h-12 rounded-xl bg-indigo-600 text-white font-semibold disabled:opacity-50 hover:bg-indigo-700 transition"
+        >
+          {loading ? "Sunum hazırlanıyor… (10-15 sn)" : "Oluştur"}
+        </button>
+      </section>
+
+      {recent.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-semibold mb-3">Son sunumlar</h2>
+          <ul className="grid md:grid-cols-2 gap-3">
+            {recent.map((d) => (
+              <li
+                key={d.id}
+                className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between"
+              >
+                <Link href={`/editor/${d.id}`} className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{d.title}</div>
+                  <div className="text-xs text-slate-500">
+                    {d.slides.length} slayt · {new Date(d.updatedAt).toLocaleString("tr-TR")}
+                  </div>
+                </Link>
+                <button
+                  onClick={() => {
+                    deleteDeck(d.id);
+                    setRecent(listDecks());
+                  }}
+                  className="text-slate-400 hover:text-red-500 px-2"
+                  title="Sil"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </main>
   );
 }
