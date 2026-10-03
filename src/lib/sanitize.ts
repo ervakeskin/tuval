@@ -16,6 +16,17 @@ const explode = (b: string[]): string[] => {
   return parts.length >= 2 ? parts : b;
 };
 
+/** Alt başlık kısa kalır: ilk cümle, en fazla ~120 karakter (model bazen kapağa paragraf yığar). */
+const clipSub = (s?: string) => {
+  if (!s) return undefined;
+  const t = s.trim();
+  const first = t.split(/(?<=[.!?])\s+/)[0];
+  const base = first.length >= 10 ? first : t;
+  if (base.length <= 120) return base;
+  const cut = base.slice(0, 120);
+  return cut.slice(0, Math.max(cut.lastIndexOf(" "), 60)).trim() + "…";
+};
+
 const col = (c: unknown) => {
   const o = (c ?? {}) as { heading?: unknown; bullets?: unknown };
   return { heading: typeof o.heading === "string" ? o.heading : "", bullets: explode(strs(o.bullets)).slice(0, 4).map(clip) };
@@ -28,7 +39,7 @@ export function sanitizeSlide(s: Partial<SlideContent> | undefined): SlideConten
   const out: SlideContent = {
     layout,
     title: typeof raw.title === "string" ? raw.title : "",
-    subtitle: raw.subtitle || undefined,
+    subtitle: clipSub(raw.subtitle),
     bullets: explode(strs(raw.bullets)).slice(0, 5).map(clip), // tasarım ilkesi: en fazla 5 satır, kısa
     icon: typeof raw.icon === "string" && raw.icon.trim() ? [...raw.icon.trim()].slice(0, 2).join("") : undefined,
     number: raw.number || undefined,

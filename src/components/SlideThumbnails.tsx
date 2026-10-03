@@ -15,7 +15,7 @@ type Props = {
   onMove: (from: number, to: number) => void;
 };
 
-const THUMB_SCALE = 0.17;
+const THUMB_SCALE = 0.15;
 
 export function SlideThumbnails({ slides, brand, current, onSelect, onAdd, onDelete, onDuplicate, onMove }: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null);

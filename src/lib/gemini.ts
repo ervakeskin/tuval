@@ -53,15 +53,17 @@ export class ModelError extends Error {}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** 429 (istek sınırı) ve 503 (model yoğun) geçici hatalardır. */
+/** 429 (istek sınırı), 503 (model yoğun), 504/zaman aşımı geçici hatalardır. */
 function isTransient(e: unknown): boolean {
   const err = e as { status?: number; code?: number; message?: string };
   return (
     err?.status === 429 ||
     err?.status === 503 ||
+    err?.status === 504 ||
     err?.code === 429 ||
     err?.code === 503 ||
-    /429|503|RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|quota/i.test(err?.message ?? "")
+    err?.code === 504 ||
+    /429|503|504|RESOURCE_EXHAUSTED|UNAVAILABLE|DEADLINE_EXCEEDED|high demand|quota|timed? ?out|abort/i.test(err?.message ?? "")
   );
 }
 

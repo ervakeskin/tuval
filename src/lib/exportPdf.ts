@@ -25,11 +25,11 @@ export async function exportPdf(deck: Deck) {
     await document.fonts.ready;
     await new Promise((r) => setTimeout(r, 300));
     const pages = Array.from(host.querySelectorAll<HTMLElement>("[data-slide-root]"));
-    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [CANVAS_W, CANVAS_H] });
+    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [CANVAS_W, CANVAS_H], compress: true });
     for (let i = 0; i < pages.length; i++) {
       const png = await toPng(pages[i], { pixelRatio: 2, width: CANVAS_W, height: CANVAS_H });
       if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "landscape");
-      pdf.addImage(png, "PNG", 0, 0, CANVAS_W, CANVAS_H);
+      pdf.addImage(png, "PNG", 0, 0, CANVAS_W, CANVAS_H, undefined, "FAST");
     }
     pdf.save(`${safeName(deck.title)}.pdf`);
   } finally {

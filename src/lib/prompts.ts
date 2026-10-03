@@ -25,6 +25,7 @@ Kurallar:
 - split: başlık + bullets alanına MUTLAKA 3-4 kısa madde yaz (subtitle değil, bullets) ve icon alanına konuyu en iyi anlatan TEK bir emoji koy. Sunum boyunca 1-2 kez kullan (görsel bir yanda, metin karşı yanda ilkesi).
 - quote: quote ve author doldur.
 - section ve title: subtitle yaz. closing: title "Teşekkürler" veya benzeri, subtitle iletişim/sorular daveti.
+- subtitle en fazla 12 kelimelik TEK kısa cümle olsun. Kullanıcının vermediği kişi adı, kurum, tarih, e-posta, telefon, web sitesi UYDURMA; bilmediğin bilgiyi yazma.
 - Her slayt için notes alanına 2-3 cümlelik konuşmacı notu yaz.
 - Sunum tipi: ${deckType}. Önerilen akış: ${STRUCTURE[deckType]}.
 Yalnızca şemaya uygun JSON döndür.`;
